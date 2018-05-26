@@ -1,3 +1,5 @@
+# vim: set tabstop=2 shiftwidth=2 expandtab:
+
 class GccMuslCross < Formula
   desc "Linux cross compilers based on GCC 7.2 and musl libc"
   homepage "https://github.com/richfelker/musl-cross-make"
@@ -16,8 +18,6 @@ class GccMuslCross < Formula
     "mips64"     => "mips64-linux-musl",
     "powerpc"    => "powerpc-linux-musl",
     "powerpc64"  => "powerpc64-linux-musl",
-    "sh4"        => "sh4-linux-musl",
-    "s390x"      => "s390x-linux-musl",
     "microblaze" => "microblaze-linux-musl",
   }.freeze
 
@@ -62,7 +62,16 @@ class GccMuslCross < Formula
     sha256 "75d5d255a2a273b6e651f82eecfabf6cbcd8eaeae70e86b417384c8f4a58d8d3"
   end
 
+  # Fix parallel build on APFS filesystems (remove for GCC 7.4.0 and later)
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81797
+  resource "apfs.patch" do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/df0465c02a/gcc/apfs.patch"
+    sha256 "f7772a6ba73f44a6b378e4fe3548e0284f48ae2d02c701df1be93780c1607074"
+  end
+
   def install
+    cp resource("apfs.patch").fetch, buildpath/"patches"/"gcc-7.2.0"/"0099-apfs.diff"
+
     (buildpath/"src").mkpath
     resources.each do |resource|
       cp resource.fetch, buildpath/"src"/resource.name
@@ -81,10 +90,15 @@ class GccMuslCross < Formula
       MPFR_VER =
 
       # Recommended options for faster/simpler build:
-      COMMON_CONFIG += --disable-nls
-      GCC_CONFIG    += --enable-languages=c,c++
-      GCC_CONFIG    += --disable-libquadmath --disable-decimal-float
-      GCC_CONFIG    += --disable-multilib
+      GCC_CONFIG += --enable-languages=c,c++
+      GCC_CONFIG += --disable-nls
+      GCC_CONFIG += --disable-libquadmath
+      GCC_CONFIG += --disable-decimal-float
+      GCC_CONFIG += --disable-multilib
+
+      # Set custom version and bug url:
+      GCC_CONFIG += --with-pkgversion="Homebrew GCC 7.2.0 musl cross #{pkg_version}"
+      GCC_CONFIG += --with-bugurl="https://github.com/MarioSchwalbe/gcc-musl-cross/issues"
 
       # Recommended options for smaller build for deploying binaries:
       COMMON_CONFIG += CFLAGS="-g0 -Os" CXXFLAGS="-g0 -Os" LDFLAGS="-s"
@@ -99,10 +113,9 @@ class GccMuslCross < Formula
     EOS
 
     ENV.prepend_path "PATH", "#{Formula["gnu-sed"].opt_libexec}/gnubin"
-    ENV.deparallelize
 
     OPTION_TO_TARGET_MAP.each do |option, target|
-      next unless (build.with? option) || (build.with? "all-targets")
+      next unless build.with?(option) || build.with?("all-targets")
       system Formula["make"].opt_bin/"gmake", "TARGET=#{target}", "install"
     end
 
@@ -112,26 +125,36 @@ class GccMuslCross < Formula
   def caveats
     <<~EOS
       When using the toolchain, the generated binaries will only run on a system with
-      the musl libc installed. Either musl-based distributions like Alpine Linux or
+      musl libc installed. Either musl-based distributions like Alpine Linux or
       distributions having the libc installed as separate packages (Debian/Ubuntu).
-      However, if building static binaries they should run on any system.
+      However, if building static binaries they should run on any system including
+      bare docker containers (x86_64/armhf only).
     EOS
   end
 
   test do
-    (testpath/"hello.c").write <<-EOS.undent
+    (testpath/"hello.c").write <<-EOS
       #include <stdio.h>
-
       int main(void)
       {
-          printf("Hello World!\n");
+          puts("Hello, world!");
+          return 0;
+      }
+    EOS
+
+    (testpath/"hello.cpp").write <<-EOS
+      #include <iostream>
+      int main(void)
+      {
+          std::cout << "Hello, world!" << std::endl;
           return 0;
       }
     EOS
 
     OPTION_TO_TARGET_MAP.each do |option, target|
-      next unless (build.with? option) || (build.with? "all-targets")
-      system (bin/"#{target}-cc"), (testpath/"hello.c")
+      next unless build.with?(option) || build.with?("all-targets")
+      system bin/"#{target}-gcc", testpath/"hello.c"
+      system bin/"#{target}-g++", testpath/"hello.cpp"
     end
   end
 end
