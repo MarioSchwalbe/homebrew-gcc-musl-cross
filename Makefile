@@ -13,7 +13,7 @@ LDFLAGS := -static
 
 .DEFAULT_GOAL := default
 
-$(TESTS):  CC = $(BIN_DIR)/$(patsubst test-%,%,$@)-gcc-7
+$(TESTS):  CC = $(BIN_DIR)/$(patsubst test-%,%-gcc-7,$@)
 $(TESTS):  test.c
 	$(LINK.c) $^ $(LDLIBS) -o $@
 
@@ -26,8 +26,16 @@ run::      $(TESTS:=.out)
 file::  $(TESTS)
 	@file $^
 
-installsize:: $(abspath $(BIN_DIR)/..)
-	du -sh $<
+DOCKER_TARGETS := $(wildcard test-i686-linux-musl test-x86_64-linux-musl)
+
+$(addprefix image-, $(DOCKER_TARGETS))::
+image-%::  $*
+	docker build --tag $* .
+	docker system prune -f
+
+$(addprefix run-, $(DOCKER_TARGETS))::
+run-%::
+	docker run --rm --name $* $*
 
 audit:: gcc-musl-cross.rb
 	brew audit --strict $<
