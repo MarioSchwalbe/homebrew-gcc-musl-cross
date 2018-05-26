@@ -172,7 +172,7 @@ class GccMuslCross < Formula
       #include <stdio.h>
       int main(void)
       {
-          puts("Hello, world!");
+          puts("Hello World!");
           return 0;
       }
     EOS
@@ -181,7 +181,7 @@ class GccMuslCross < Formula
       #include <iostream>
       int main(void)
       {
-          std::cout << "Hello, world!" << std::endl;
+          std::cout << "Hello World!" << std::endl;
           return 0;
       }
     EOS
