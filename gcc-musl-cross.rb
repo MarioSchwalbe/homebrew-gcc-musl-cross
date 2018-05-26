@@ -77,7 +77,7 @@ class GccMuslCross < Formula
 
   def install
     config_mak = buildpath/"config.mak"
-    osmajor = `uname -r`.chomp
+    os_version = `uname -r`.chomp
 
     # put all (re)sources into src subdir
     (srcdir = buildpath/"src").mkpath
@@ -119,7 +119,7 @@ class GccMuslCross < Formula
         GCC_CONFIG += --with-system-zlib
 
         # Release build options:
-        GCC_CONFIG += --build=x86_64-apple-darwin#{osmajor}
+        GCC_CONFIG += --build=x86_64-apple-darwin#{os_version}
         GCC_CONFIG += --program-prefix=#{target}-
         GCC_CONFIG += --program-suffix=-#{version_suffix}
         GCC_CONFIG += --enable-default-pie
