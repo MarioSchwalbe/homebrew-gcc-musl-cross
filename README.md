@@ -64,7 +64,6 @@ Supported Targets
 1. `mips64-linux-musl`
 1. `powerpc-linux-musl`
 1. `powerpc64-linux-musl`
-1. `microblaze-linux-musl`
 
 Other targets or variants can be added easily by extending the hash `OPTION_TO_TARGET_MAP` in the
 formula as long as `musl-cross-make` and `musl` libc also support them.
