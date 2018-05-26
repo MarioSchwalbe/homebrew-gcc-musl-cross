@@ -37,6 +37,7 @@ class GccMuslCross < Formula
   depends_on "libmpc" => :build
   depends_on "gmp" => :build
   depends_on "mpfr" => :build
+  depends_on "isl" => :build
 
   resource "linux-4.4.10.tar.xz" do
     url "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.4.10.tar.xz"
