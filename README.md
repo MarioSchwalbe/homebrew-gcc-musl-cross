@@ -9,10 +9,10 @@ The default installation contains toolchains for x86 64-bit Linux (`x86_64-linux
 installed with package options (see `brew info`).
 
 Note, when using the toolchain, the generated binaries will only run on a system with `musl` libc
-installed. Either musl-based distributions like Alpine Linux or distributions having the libc
+installed. Either musl-based distributions like Alpine Linux or distributions having `musl` libc
 installed as separate packages (e.g., Debian/Ubuntu).
 
-Binaries statically linked with `musl` libc (link with `--static`) have no external dependencies,
+Binaries statically linked with `musl` libc (linked with `--static`) have no external dependencies,
 even for features like DNS lookups or character set conversions that are implemented with dynamic
 loading on glibc. The application can be deployed as a single binary file and run on any machine
 with the appropriate ISA and Linux kernel or Linux syscall ABI emulation layer including bare docker

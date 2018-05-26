@@ -5,7 +5,7 @@
 # BIN_DIR := /usr/local/opt/gcc-musl-cross/bin
 BIN_DIR := /usr/local/Cellar/gcc-musl-cross/7.2.0/bin
 
-TARGETS := $(patsubst %-gcc, %, $(notdir $(wildcard $(BIN_DIR)/*-gcc)))
+TARGETS := $(patsubst %-gcc-7, %, $(notdir $(wildcard $(BIN_DIR)/*-gcc-7)))
 TESTS   := $(addprefix test-, $(TARGETS))
 
 CFLAGS  := -Os -Wall -Wextra
@@ -13,7 +13,7 @@ LDFLAGS := -static
 
 .DEFAULT_GOAL := default
 
-$(TESTS):  CC = $(BIN_DIR)/$(patsubst test-%,%,$@)-gcc
+$(TESTS):  CC = $(BIN_DIR)/$(patsubst test-%,%,$@)-gcc-7
 $(TESTS):  test.c
 	$(LINK.c) $^ $(LDLIBS) -o $@
 

@@ -19,7 +19,7 @@ class GccMuslCross < Formula
     "mips64"     => "mips64-linux-musl",
     "powerpc"    => "powerpc-linux-musl",
     "powerpc64"  => "powerpc64-linux-musl",
-    "microblaze" => "microblaze-linux-musl",
+    # "microblaze" => "microblaze-linux-musl",
   }.freeze
 
   OPTION_TO_TARGET_MAP.each do |option, target|
@@ -70,79 +70,97 @@ class GccMuslCross < Formula
     sha256 "f7772a6ba73f44a6b378e4fe3548e0284f48ae2d02c701df1be93780c1607074"
   end
 
+  def version_suffix
+    version.to_s.slice(/\d/)
+  end
+
   def install
+    config_mak = buildpath/"config.mak"
+    osmajor = `uname -r`.chomp
+
+    # put all (re)sources into src subdir
+    (srcdir = buildpath/"src").mkpath
+    resources.each { |resource| cp resource.fetch, srcdir/resource.name }
+
+    # write additional patch for GCC
     cp resource("apfs.patch").fetch, buildpath/"patches"/"gcc-7.2.0"/"0099-apfs.diff"
 
-    (buildpath/"src").mkpath
-    resources.each do |resource|
-      cp resource.fetch, buildpath/"src"/resource.name
-    end
+    # also change --libdir=#{lib}/gcc/#{version_suffix} to avoid conflicts with gcc@7
+    inreplace buildpath/"litecross"/"Makefile", "--libdir=/lib", "--libdir=/lib/gcc/#{version_suffix}-musl-cross"
 
-    # also pass --libdir=#{lib}/gcc/#{version_suffix} to avoid conflicts with gcc@7
-    inreplace buildpath/"litecross"/"Makefile", "--libdir=/lib", "--libdir=/lib/gcc/7-musl-cross"
-
-    # FIXME: append version suffix to binaries
-    (buildpath/"config.mak").write <<-EOS
-      SOURCES = #{buildpath/"src"}
-      OUTPUT  = #{prefix}
-
-      # Versions:
-      GCC_VER  = 7.2.0
-      MUSL_VER = 1.1.19
-      # Do not attempt to download packages (isl is disabled by default)
-      GMP_VER  =
-      MPC_VER  =
-      MPFR_VER =
-
-      # Setup libs from Homebrew:
-      GCC_CONFIG += --with-gmp=#{Formula["gmp"].opt_prefix}
-      GCC_CONFIG += --with-mpc=#{Formula["libmpc"].opt_prefix}
-      GCC_CONFIG += --with-mpfr=#{Formula["mpfr"].opt_prefix}
-      GCC_CONFIG += --with-isl=#{Formula["isl"].opt_prefix}
-      GCC_CONFIG += --with-system-zlib
-
-      # Recommended options for faster/simpler build:
-      GCC_CONFIG += --enable-languages=c,c++
-      GCC_CONFIG += --disable-nls
-      GCC_CONFIG += --disable-libquadmath --disable-libquadmath-support
-      # GCC_CONFIG += --disable-multilib
-
-      # Release build options:
-      GCC_CONFIG += --enable-default-pie
-      GCC_CONFIG += --enable-checking=release
-      GCC_CONFIG += --with-pkgversion="Homebrew GCC #{pkg_version} musl cross"
-      GCC_CONFIG += --with-bugurl="https://github.com/MarioSchwalbe/gcc-musl-cross/issues"
-
-      # Recommended options for smaller build for deploying binaries:
-      COMMON_CONFIG += CFLAGS="-g0 -Os" CXXFLAGS="-g0 -Os" LDFLAGS="-s"
-
-      # Keep the local build path out of binaries and libraries:
-      COMMON_CONFIG += --with-debug-prefix-map=$(CURDIR)=
-
-      # https://llvm.org/bugs/show_bug.cgi?id=19650:
-      ifeq ($(shell $(CXX) -v 2>&1 | grep -c "clang"), 1)
-          TOOLCHAIN_CONFIG += CXX="$(CXX) -fbracket-depth=512"
-      endif
-    EOS
-
+    # make sure we use GNU sed for building
     ENV.prepend_path "PATH", "#{Formula["gnu-sed"].opt_libexec}/gnubin"
 
+    # write config, build, and install all targets
     OPTION_TO_TARGET_MAP.each do |option, target|
       next unless build.with?(option) || build.with?("all-targets")
+
+      config_mak.unlink if config_mak.exist?
+      config_mak.write <<-EOS
+        SOURCES = #{srcdir}
+        OUTPUT  = #{prefix}
+
+        # Versions:
+        GCC_VER  = 7.2.0
+        MUSL_VER = 1.1.19
+
+        # Setup to use libs from Homebrew:
+        GMP_VER  =
+        MPC_VER  =
+        MPFR_VER =
+        ISL_VER  =
+        GCC_CONFIG += --with-gmp=#{Formula["gmp"].opt_prefix}
+        GCC_CONFIG += --with-mpc=#{Formula["libmpc"].opt_prefix}
+        GCC_CONFIG += --with-mpfr=#{Formula["mpfr"].opt_prefix}
+        GCC_CONFIG += --with-isl=#{Formula["isl"].opt_prefix}
+        GCC_CONFIG += --with-system-zlib
+
+        # Release build options:
+        GCC_CONFIG += --build=x86_64-apple-darwin#{osmajor}
+        GCC_CONFIG += --program-prefix=#{target}-
+        GCC_CONFIG += --program-suffix=-#{version_suffix}
+        GCC_CONFIG += --enable-default-pie
+        GCC_CONFIG += --enable-checking=release
+        GCC_CONFIG += --with-pkgversion="Homebrew GCC #{pkg_version} musl cross"
+        GCC_CONFIG += --with-bugurl="https://github.com/MarioSchwalbe/gcc-musl-cross/issues"
+
+        # Recommended options for faster/simpler build:
+        GCC_CONFIG += --enable-languages=c,c++
+        GCC_CONFIG += --disable-nls
+        GCC_CONFIG += --disable-libquadmath --disable-libquadmath-support
+        # GCC_CONFIG += --disable-multilib
+
+        # Recommended options for smaller build for deploying binaries:
+        COMMON_CONFIG += CFLAGS="-g0 -Os" CXXFLAGS="-g0 -Os" LDFLAGS="-s"
+
+        # Keep the local build path out of binaries and libraries:
+        COMMON_CONFIG += --with-debug-prefix-map=$(CURDIR)=
+
+        # https://llvm.org/bugs/show_bug.cgi?id=19650:
+        ifeq ($(shell $(CXX) -v 2>&1 | grep -c "clang"), 1)
+            TOOLCHAIN_CONFIG += CXX="$(CXX) -fbracket-depth=512"
+        endif
+      EOS
+
       system Formula["make"].opt_bin/"gmake", "TARGET=#{target}", "install"
+
+      # delete -cc link created by musl-cross-make
+      target_cc = Pathname.new "#{target}-cc"
+      target_cc.unlink if target_cc.exist?
     end
 
     # Handle conflicts between GCC formulae and avoid interfering with system compilers.
-    man7.rmtree
+    man7.rmtree if man7.exist?
+    info.rmtree if info.exist?
   end
 
   def caveats
     <<~EOS
       When using the toolchain, the generated binaries will only run on a system with
       musl libc installed. Either musl-based distributions like Alpine Linux or
-      distributions having the libc installed as separate packages (Debian/Ubuntu).
+      distributions having musl libc installed as separate packages (Debian/Ubuntu).
       However, if building static binaries they should run on any system including
-      bare docker containers (x86_64/armhf only).
+      bare docker containers.
     EOS
   end
 
@@ -167,8 +185,8 @@ class GccMuslCross < Formula
 
     OPTION_TO_TARGET_MAP.each do |option, target|
       next unless build.with?(option) || build.with?("all-targets")
-      system bin/"#{target}-gcc", testpath/"hello.c"
-      system bin/"#{target}-g++", testpath/"hello.cpp"
+      system bin/"#{target}-gcc-#{version_suffix}", "-O2", testpath/"hello.c"
+      system bin/"#{target}-g++-#{version_suffix}", "-O2", testpath/"hello.cpp"
     end
   end
 end
