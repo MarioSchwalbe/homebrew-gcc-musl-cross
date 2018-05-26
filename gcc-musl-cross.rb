@@ -48,14 +48,14 @@ class GccMuslCross < Formula
     sha256 "369737ce51587f92466041a97ab7d2358c6d9e1b6490b3940eb09fb0a9a6ac88"
   end
 
-  resource "musl-1.1.19.tar.gz" do
-    url "https://www.musl-libc.org/releases/musl-1.1.19.tar.gz"
-    sha256 "db59a8578226b98373f5b27e61f0dd29ad2456f4aa9cec587ba8c24508e4c1d9"
-  end
-
   resource "gcc-7.2.0.tar.xz" do
     url "https://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz"
     sha256 "1cf7adf8ff4b5aa49041c8734bbcf1ad18cc4c94d0029aae0f4e48841088479a"
+  end
+
+  resource "musl-1.1.19.tar.gz" do
+    url "https://www.musl-libc.org/releases/musl-1.1.19.tar.gz"
+    sha256 "db59a8578226b98373f5b27e61f0dd29ad2456f4aa9cec587ba8c24508e4c1d9"
   end
 
   resource "config.sub" do
