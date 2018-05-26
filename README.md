@@ -37,7 +37,7 @@ Usage
     ```
     or
     ```sh
-    $ brew tap MarioSchwalbe/gcc-musl-cross
+    $ brew tap MarioSchwalbe/gcc-musl-cross https://github.com/MarioSchwalbe/gcc-musl-cross
     $ brew install gcc-musl-cross
     ```
 
