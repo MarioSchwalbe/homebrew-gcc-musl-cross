@@ -80,7 +80,9 @@ class GccMuslCross < Formula
 
     # put all (re)sources into src subdir
     (srcdir = buildpath/"src").mkpath
-    resources.each { |resource| cp resource.fetch, srcdir/resource.name }
+    resources.each do |resource|
+      cp resource.fetch, srcdir/resource.name
+    end
 
     # write additional patch for GCC
     cp resource("apfs.patch").fetch, buildpath/"patches"/"gcc-7.2.0"/"0099-apfs.diff"
