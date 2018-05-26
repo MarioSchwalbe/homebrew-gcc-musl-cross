@@ -2,8 +2,8 @@
 
 # vim: set tabstop=8 shiftwidth=8 noexpandtab:
 
-BIN_DIR := /usr/local/opt/gcc-musl-cross/bin
-BIN_DIR := /usr/local/Cellar/gcc-musl-cross/0.9.7/libexec/bin
+# BIN_DIR := /usr/local/opt/gcc-musl-cross/bin
+BIN_DIR := /usr/local/Cellar/gcc-musl-cross/7.2.0/bin
 
 TARGETS := $(patsubst %-gcc, %, $(notdir $(wildcard $(BIN_DIR)/*-gcc)))
 TESTS   := $(addprefix test-, $(TARGETS))
@@ -26,7 +26,7 @@ run::      $(TESTS:=.out)
 file::  $(TESTS)
 	@file $^
 
-installsize:: $(abspath $(BIN_DIR)/../..)
+installsize:: $(abspath $(BIN_DIR)/..)
 	du -sh $<
 
 audit:: gcc-musl-cross.rb

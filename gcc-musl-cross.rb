@@ -4,8 +4,9 @@ class GccMuslCross < Formula
   desc "Linux cross compilers based on GCC 7.2 and musl libc"
   homepage "https://github.com/richfelker/musl-cross-make"
   url "https://github.com/richfelker/musl-cross-make/archive/v0.9.7.tar.gz"
+  version "7.2.0"
   sha256 "876173e2411b5f50516723c63075655a9aac55ee3804f91adfb61f0a85af8f38"
-  head "https://github.com/richfelker/musl-cross-make.git"
+  # head "https://github.com/richfelker/musl-cross-make.git"
 
   OPTION_TO_TARGET_MAP = {
     "i686"       => "i686-linux-musl",
@@ -77,27 +78,39 @@ class GccMuslCross < Formula
       cp resource.fetch, buildpath/"src"/resource.name
     end
 
+    # also pass --libdir=#{lib}/gcc/#{version_suffix} to avoid conflicts with gcc@7
+    inreplace buildpath/"litecross"/"Makefile", "--libdir=/lib", "--libdir=/lib/gcc/7-musl-cross"
+
+    # FIXME: append version suffix to binaries
     (buildpath/"config.mak").write <<-EOS
       SOURCES = #{buildpath/"src"}
-      OUTPUT  = #{libexec}
+      OUTPUT  = #{prefix}
 
       # Versions:
       GCC_VER  = 7.2.0
       MUSL_VER = 1.1.19
-      # Use Homebrew provided versions
+      # Do not attempt to download packages (isl is disabled by default)
       GMP_VER  =
       MPC_VER  =
       MPFR_VER =
 
+      # Setup libs from Homebrew:
+      GCC_CONFIG += --with-gmp=#{Formula["gmp"].opt_prefix}
+      GCC_CONFIG += --with-mpc=#{Formula["libmpc"].opt_prefix}
+      GCC_CONFIG += --with-mpfr=#{Formula["mpfr"].opt_prefix}
+      GCC_CONFIG += --with-isl=#{Formula["isl"].opt_prefix}
+      GCC_CONFIG += --with-system-zlib
+
       # Recommended options for faster/simpler build:
       GCC_CONFIG += --enable-languages=c,c++
       GCC_CONFIG += --disable-nls
-      GCC_CONFIG += --disable-libquadmath
-      GCC_CONFIG += --disable-decimal-float
-      GCC_CONFIG += --disable-multilib
+      GCC_CONFIG += --disable-libquadmath --disable-libquadmath-support
+      # GCC_CONFIG += --disable-multilib
 
-      # Set custom version and bug url:
-      GCC_CONFIG += --with-pkgversion="Homebrew GCC 7.2.0 musl cross #{pkg_version}"
+      # Release build options:
+      GCC_CONFIG += --enable-default-pie
+      GCC_CONFIG += --enable-checking=release
+      GCC_CONFIG += --with-pkgversion="Homebrew GCC #{pkg_version} musl cross"
       GCC_CONFIG += --with-bugurl="https://github.com/MarioSchwalbe/gcc-musl-cross/issues"
 
       # Recommended options for smaller build for deploying binaries:
@@ -106,7 +119,7 @@ class GccMuslCross < Formula
       # Keep the local build path out of binaries and libraries:
       COMMON_CONFIG += --with-debug-prefix-map=$(CURDIR)=
 
-      # https://llvm.org/bugs/show_bug.cgi?id=19650
+      # https://llvm.org/bugs/show_bug.cgi?id=19650:
       ifeq ($(shell $(CXX) -v 2>&1 | grep -c "clang"), 1)
           TOOLCHAIN_CONFIG += CXX="$(CXX) -fbracket-depth=512"
       endif
@@ -119,7 +132,8 @@ class GccMuslCross < Formula
       system Formula["make"].opt_bin/"gmake", "TARGET=#{target}", "install"
     end
 
-    bin.install_symlink Dir["#{libexec}/bin/*"]
+    # Handle conflicts between GCC formulae and avoid interfering with system compilers.
+    man7.rmtree
   end
 
   def caveats
