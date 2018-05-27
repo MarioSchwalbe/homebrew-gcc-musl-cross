@@ -17,10 +17,13 @@ $(TESTS):  CC = $(BIN_DIR)/$(patsubst test-%,%-gcc-7,$@)
 $(TESTS):  test.c
 	$(LINK.c) $^ $(LDLIBS) -o $@
 
+# DOCKER_RUN_FLAGS := -v /bin/bash-static:/bin/sh:ro
+
 $(TESTS:=.out):
 %.out:	% Dockerfile
-	docker build --build-arg QEMU=qemu-$(word 2,$(subst -, ,$*)) --build-arg APP=$* --tag $* .
-	docker run --rm --name $* $* | tee $@
+	chmod 755 $*
+	docker build --build-arg APP=$* --tag $* .
+	docker run $$(cat qemu-static) --rm $(DOCKER_RUN_FLAGS) --name $* $* | tee $@
 
 default::  $(TESTS)
 run::      $(TESTS:=.out)

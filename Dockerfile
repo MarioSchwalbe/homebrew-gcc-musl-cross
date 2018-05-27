@@ -4,13 +4,11 @@
 FROM alpine:latest
 WORKDIR /
 
-# install qemu and copy test app
-ARG QEMU
-RUN apk --no-cache add ${QEMU}
+# copy test app
 ARG APP
-ADD ${APP} .
+ADD --chown=nobody ${APP} .
 
 # CMD does not expand ARG
-ENV QEMU=${QEMU}
-ENV APP=${APP}
-ENTRYPOINT exec ${QEMU} -0 ${APP} ${APP}
+USER nobody:nobody
+ENV  APP=${APP}
+CMD  exec ./${APP}
