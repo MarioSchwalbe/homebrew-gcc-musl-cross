@@ -86,9 +86,9 @@ class GccMuslCross < Formula
     end
 
     # write additional patch for GCC
-    cp resource("apfs.patch").fetch, buildpath/"patches"/"gcc-7.2.0"/"0099-apfs.diff"
+    cp resource("apfs.patch").fetch, buildpath/"patches"/"gcc-#{version}"/"0099-apfs.diff"
 
-    # also change --libdir=#{lib}/gcc/#{version_suffix} to avoid conflicts with gcc@7
+    # also change --libdir=#{lib}/gcc/#{version_suffix} to avoid conflicts with Homebrew gcc
     inreplace buildpath/"litecross"/"Makefile", "--libdir=/lib", "--libdir=/lib/gcc/#{version_suffix}-musl-cross"
 
     # make sure we use GNU sed for building
@@ -104,7 +104,7 @@ class GccMuslCross < Formula
         OUTPUT  = #{prefix}
 
         # Versions:
-        GCC_VER  = 7.2.0
+        GCC_VER  = #{version}
         MUSL_VER = 1.1.19
 
         # Setup to use libs from Homebrew:
@@ -147,14 +147,15 @@ class GccMuslCross < Formula
 
       system Formula["make"].opt_bin/"gmake", "TARGET=#{target}", "install"
 
-      # delete -cc link created by musl-cross-make
-      %w[cc gcc-7.2.0].each do |suffix|
-        file = bin/"#{target}-#{suffix}"
-        file.unlink if file.exist?
+      # delete -cc link (created by musl-cross-make) and -gcc-7.2.0
+      "cc gcc-#{version}".split.each do |suffix|
+        prog = bin/"#{target}-#{suffix}"
+        # FIXME: Does not delete broken symlinks. prog.symlink? returns false. Why?
+        prog.unlink if prog.file? || prog.symlink?
       end
     end
 
-    # Handle conflicts between GCC formulae and avoid interfering with system compilers.
+    # handle conflicts between GCC formulae and avoid interfering with system compilers
     man7.rmtree if man7.exist?
     info.rmtree if info.exist?
   end
