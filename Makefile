@@ -17,25 +17,16 @@ $(TESTS):  CC = $(BIN_DIR)/$(patsubst test-%,%-gcc-7,$@)
 $(TESTS):  test.c
 	$(LINK.c) $^ $(LDLIBS) -o $@
 
-%.out:	%
-	$< > $@
+$(TESTS:=.out):
+%.out:	% Dockerfile
+	docker build --build-arg QEMU=qemu-$(word 2,$(subst -, ,$*)) --build-arg APP=$* --tag $* .
+	docker run --rm --name $* $* | tee $@
 
 default::  $(TESTS)
 run::      $(TESTS:=.out)
 
 file::  $(TESTS)
 	@file $^
-
-DOCKER_TARGETS := $(wildcard test-i686-linux-musl test-x86_64-linux-musl)
-
-$(addprefix image-, $(DOCKER_TARGETS))::
-image-%::  $*
-	docker build --tag $* .
-	docker system prune -f
-
-$(addprefix run-, $(DOCKER_TARGETS))::
-run-%::
-	docker run --rm --name $* $*
 
 audit:: gcc-musl-cross.rb
 	brew audit --strict $<
