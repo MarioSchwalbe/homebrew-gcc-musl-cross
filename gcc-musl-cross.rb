@@ -148,8 +148,10 @@ class GccMuslCross < Formula
       system Formula["make"].opt_bin/"gmake", "TARGET=#{target}", "install"
 
       # delete -cc link created by musl-cross-make
-      target_cc = Pathname.new "#{target}-cc"
-      target_cc.unlink if target_cc.exist?
+      %w[cc gcc-7.2.0].each do |suffix|
+        file = Pathname.new bin/"#{target}-#{suffix}"
+        file.unlink if file.exist?
+      end
     end
 
     # Handle conflicts between GCC formulae and avoid interfering with system compilers.
@@ -188,8 +190,16 @@ class GccMuslCross < Formula
 
     OPTION_TO_TARGET_MAP.each do |option, target|
       next unless build.with?(option) || build.with?("all-targets")
-      system bin/"#{target}-gcc-#{version_suffix}", "-O2", testpath/"hello.c"
-      system bin/"#{target}-g++-#{version_suffix}", "-O2", testpath/"hello.cpp"
+
+      system bin/"#{target}-gcc-#{version_suffix}",     "-O2", "hello.c", "-o", "hello-#{target}"
+      system bin/"#{target}-readelf-#{version_suffix}", "-a", "hello-#{target}"
+      system bin/"#{target}-objdump-#{version_suffix}", "-ldSC", "hello-#{target}"
+      system bin/"#{target}-strings-#{version_suffix}", "hello-#{target}"
+
+      system bin/"#{target}-g++-#{version_suffix}",     "-O2", "hello.cpp", "-o", "hello-#{target}"
+      system bin/"#{target}-readelf-#{version_suffix}", "-a", "hello-#{target}"
+      system bin/"#{target}-objdump-#{version_suffix}", "-ldSC", "hello-#{target}"
+      system bin/"#{target}-strings-#{version_suffix}", "hello-#{target}"
     end
   end
 end
