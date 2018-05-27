@@ -149,7 +149,7 @@ class GccMuslCross < Formula
 
       # delete -cc link created by musl-cross-make
       %w[cc gcc-7.2.0].each do |suffix|
-        file = Pathname.new bin/"#{target}-#{suffix}"
+        file = bin/"#{target}-#{suffix}"
         file.unlink if file.exist?
       end
     end
@@ -191,12 +191,12 @@ class GccMuslCross < Formula
     OPTION_TO_TARGET_MAP.each do |option, target|
       next unless build.with?(option) || build.with?("all-targets")
 
-      system bin/"#{target}-gcc-#{version_suffix}",     "-O2", "hello.c", "-o", "hello-#{target}"
+      system bin/"#{target}-gcc-#{version_suffix}", "-O2", "hello.c", "-o", "hello-#{target}"
       system bin/"#{target}-readelf-#{version_suffix}", "-a", "hello-#{target}"
       system bin/"#{target}-objdump-#{version_suffix}", "-ldSC", "hello-#{target}"
       system bin/"#{target}-strings-#{version_suffix}", "hello-#{target}"
 
-      system bin/"#{target}-g++-#{version_suffix}",     "-O2", "hello.cpp", "-o", "hello-#{target}"
+      system bin/"#{target}-g++-#{version_suffix}", "-O2", "hello.cpp", "-o", "hello-#{target}"
       system bin/"#{target}-readelf-#{version_suffix}", "-a", "hello-#{target}"
       system bin/"#{target}-objdump-#{version_suffix}", "-ldSC", "hello-#{target}"
       system bin/"#{target}-strings-#{version_suffix}", "hello-#{target}"
