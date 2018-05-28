@@ -19,6 +19,10 @@ class GccMuslCross < Formula
     "mips64"     => "mips64-linux-musl",
     "powerpc"    => "powerpc-linux-musl",
     "powerpc64"  => "powerpc64-linux-musl",
+    # FIXME: Does not compile musl libc.
+    # "sh4"        => "sh4-linux-musl",
+    # "s390x"      => "s390x-linux-musl",
+    # FIXME: cannot execute binary file: Exec format error
     # "microblaze" => "microblaze-linux-musl",
   }.freeze
 
@@ -85,7 +89,7 @@ class GccMuslCross < Formula
       cp resource.fetch, srcdir/resource.name
     end
 
-    # write additional patch for GCC
+    # Fix parallel build on APFS filesystems (remove for GCC 7.4.0 and later)
     cp resource("apfs.patch").fetch, buildpath/"patches"/"gcc-#{version}"/"0099-apfs.diff"
 
     # also change --libdir=#{lib}/gcc/#{version_suffix} to avoid conflicts with Homebrew gcc
@@ -98,8 +102,8 @@ class GccMuslCross < Formula
     OPTION_TO_TARGET_MAP.each do |option, target|
       next unless build.with?(option) || build.with?("all-targets")
 
-      config_mak.unlink if config_mak.exist?
-      config_mak.write <<-EOS
+      # DOCS: https://gcc.gnu.org/install/configure.html
+      config = <<-EOS
         SOURCES = #{srcdir}
         OUTPUT  = #{prefix}
 
@@ -145,12 +149,22 @@ class GccMuslCross < Formula
         endif
       EOS
 
+      # append required options for ppc targets
+      if target.start_with? "powerpc"
+        config += <<-EOS
+          GCC_CONFIG += --with-long-double-64
+          GCC_CONFIG += --enable-secureplt
+        EOS
+      end
+
+      # write config, build, and install
+      config_mak.unlink if config_mak.exist?
+      config_mak.write(config)
       system Formula["make"].opt_bin/"gmake", "TARGET=#{target}", "install"
 
-      # delete -cc link (created by musl-cross-make) and -gcc-7.2.0
+      # delete -cc link (created by musl-cross-make) and -gcc-7.2.0 (GCC default)
       "cc gcc-#{version}".split.each do |suffix|
         prog = bin/"#{target}-#{suffix}"
-        # FIXME: Does not delete broken symlinks. prog.symlink? returns false. Why?
         prog.unlink if prog.file? || prog.symlink?
       end
     end

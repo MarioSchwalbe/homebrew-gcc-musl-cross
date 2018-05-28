@@ -40,6 +40,7 @@ file::  $(TESTS)
 	@file $^
 
 audit:: gcc-musl-cross.rb
+	chmod 644 $<
 	brew audit --strict $<
 	brew audit --new-formula $<
 
