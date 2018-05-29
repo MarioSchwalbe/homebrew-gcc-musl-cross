@@ -27,13 +27,14 @@ $(TESTS:=.out):
 	@rsync $* $(TEST_HOST):/tmp
 	set -o pipefail && ssh $(TEST_HOST) -- /tmp/$(notdir $*) | tee $@
 
-# DOCKER_RUN_FLAGS := -v /bin/bash-static:/bin/sh:ro
+DOCKERFILE := Dockerfile.alpine
+# DOCKER_RUN_FLAGS := -v /bin/static-sh:/bin/sh:ro
 
 $(TESTS:=.dock):
-%.dock: % Dockerfile
+%.dock: % $(DOCKERFILE)
 	@chmod 755 $*
-	docker build --build-arg APP=$* --tag $* .
-	set -o pipefail && docker run $$(cat qemu-static) --rm $(DOCKER_RUN_FLAGS) --name $* $* | tee $@
+	docker build -f $(DOCKERFILE) --build-arg APP=$* --tag $* .
+	set -o pipefail && docker run $$(cat qemu-static) --rm $(DOCKER_RUN_FLAGS) $* | tee $@
 
 default::  $(TESTS)
 run::      $(TESTS:=.out)

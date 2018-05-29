@@ -6,7 +6,7 @@ WORKDIR /
 
 # copy test app
 ARG APP
-ADD --chown=nobody ${APP} .
+ADD ${APP} .
 
 # CMD does not expand ARG
 USER nobody:nobody

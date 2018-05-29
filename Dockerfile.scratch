@@ -1,0 +1,14 @@
+# https://resin.io/blog/building-arm-containers-on-any-x86-machine-even-dockerhub/
+# https://docs.docker.com/engine/reference/builder/
+
+FROM scratch
+WORKDIR /
+
+# copy test app
+ARG APP
+ADD ${APP} .
+
+# CMD does not expand ARG
+USER 65534:65534
+ENV  APP=${APP}
+CMD  exec ./${APP}
