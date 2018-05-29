@@ -2,6 +2,9 @@
 
 # vim: set tabstop=8 shiftwidth=8 noexpandtab:
 
+.DELETE_ON_ERROR:
+SHELL   := /bin/bash
+
 # BIN_DIR := /usr/local/opt/gcc-musl-cross/bin
 BIN_DIR := /usr/local/Cellar/gcc-musl-cross/7.2.0/bin
 
@@ -21,16 +24,16 @@ TEST_HOST := mario@sylvester
 
 $(TESTS:=.out):
 %.out:  %
-	rsync $* $(TEST_HOST):/tmp
-	ssh $(TEST_HOST) -- /tmp/$(notdir $*) | tee $@
+	@rsync $* $(TEST_HOST):/tmp
+	set -o pipefail && ssh $(TEST_HOST) -- /tmp/$(notdir $*) | tee $@
 
 # DOCKER_RUN_FLAGS := -v /bin/bash-static:/bin/sh:ro
 
 $(TESTS:=.dock):
 %.dock: % Dockerfile
-	chmod 755 $*
+	@chmod 755 $*
 	docker build --build-arg APP=$* --tag $* .
-	docker run $$(cat qemu-static) --rm $(DOCKER_RUN_FLAGS) --name $* $* | tee $@
+	set -o pipefail && docker run $$(cat qemu-static) --rm $(DOCKER_RUN_FLAGS) --name $* $* | tee $@
 
 default::  $(TESTS)
 run::      $(TESTS:=.out)
