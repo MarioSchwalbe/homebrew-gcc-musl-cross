@@ -40,6 +40,9 @@ default::  $(TESTS)
 run::      $(TESTS:=.out)
 docker::   $(TESTS:=.dock)
 
+docker-image-rm::  $(TESTS)
+	docker image rm $^ || true
+
 file::  $(TESTS)
 	@file $^
 
