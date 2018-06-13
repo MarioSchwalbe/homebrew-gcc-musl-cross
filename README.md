@@ -43,7 +43,7 @@ Usage
 
 1. For dynamically linked applications install the Debian/Ubuntu packages on the target:
     ```sh
-    $ sudo apt-get install musl:i386=1.1.19-1 musl:amd64=1.1.19-1
+    $ sudo apt install musl:i386=1.1.19-1 musl:amd64=1.1.19-1
     ```
     Make sure to install the correct version. As of this writing Ubuntu 18.04 (Bionic) ships `musl`
     libc `1.1.19` also used to build the toolchain.
