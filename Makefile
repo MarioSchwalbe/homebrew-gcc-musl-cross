@@ -8,7 +8,7 @@ SHELL   := /bin/bash
 # BIN_DIR := /usr/local/opt/gcc-musl-cross/bin
 BIN_DIR := /usr/local/Cellar/gcc-musl-cross/7.2.0/bin
 
-TARGETS := $(patsubst %-gcc-7, %, $(notdir $(wildcard $(BIN_DIR)/*-gcc-7)))
+TARGETS := $(sort $(patsubst %-gcc-7, %, $(notdir $(wildcard $(BIN_DIR)/*-gcc-7))))
 TESTS   := $(addprefix test-, $(TARGETS))
 
 CFLAGS  := -Os -Wall -Wextra
