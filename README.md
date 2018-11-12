@@ -41,7 +41,7 @@ Usage
     $ brew install gcc-musl-cross
     ```
 
-1. For dynamically linked applications install the Debian/Ubuntu packages on the target:
+1. For dynamically linked applications install the Debian/Ubuntu packages on the target machine:
     ```sh
     $ sudo apt install musl:i386=1.1.19-1 musl:amd64=1.1.19-1
     ```
