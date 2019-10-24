@@ -5,23 +5,23 @@ gcc-musl-cross
 Linux boxes.
 
 The default installation contains toolchains for x86 64-bit Linux (`x86_64-linux-musl`) and ARM
-32-bit Linux (`arm-linux-musleabihf`) as used on Raspberry Pi and similar devices. Others can be
-installed with package options (see `brew info`).
+32/64-bit Linux (`arm-linux-musleabihf`/`aarch64-linux-musl`) as used on Raspberry Pi and similar
+devices. Others can be installed with package options (see `brew info`).
 
 Note, when using the toolchain, the generated binaries will only run on a system with `musl` libc
 installed. Either musl-based distributions like Alpine Linux or distributions having `musl` libc
 installed as separate packages (e.g., Debian/Ubuntu).
 
-Binaries statically linked with `musl` libc (linked with `--static`) have no external dependencies,
+Binaries statically linked with `musl` libc (linked with `-static`) have no external dependencies,
 even for features like DNS lookups or character set conversions that are implemented with dynamic
 loading on glibc. The application can be deployed as a single binary file and run on any machine
 with the appropriate ISA and Linux kernel or Linux syscall ABI emulation layer including bare docker
-containers (x86_64/armhf only).
+containers.
 
 **Tool Versions:**
-- [GCC](https://gcc.gnu.org/) 7.2.0
-- [binutils](https://www.gnu.org/software/binutils/) 2.27
-- [musl libc](https://www.musl-libc.org/) 1.1.19
+- [GCC](https://gcc.gnu.org/) 8.3.0
+- [binutils](https://www.gnu.org/software/binutils/) 2.32
+- [musl libc](https://www.musl-libc.org/) 1.1.22
 
 **Based upon:**
 - [musl-cross-make](https://github.com/richfelker/musl-cross-make) by Rich Felker
@@ -41,14 +41,14 @@ Usage
     $ brew install gcc-musl-cross
     ```
 
-1. For dynamically linked applications install the Debian/Ubuntu packages on the target machine:
+2. For dynamically linked applications install the Debian/Ubuntu packages on the target machine:
     ```sh
     $ sudo apt install musl:i386=1.1.19-1 musl:amd64=1.1.19-1
     ```
     Make sure to install the correct version. As of this writing Ubuntu 18.04 (Bionic) ships `musl`
     libc `1.1.19` also used to build the toolchain.
 
-1. Compile with `<TARGET>-gcc` e.g., `x86_64-linux-musl-gcc`, deploy, and run.
+3. Compile with `<TARGET>-gcc` e.g., `x86_64-linux-musl-gcc`, deploy, and run.
 
 
 Supported Targets

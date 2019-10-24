@@ -1,12 +1,16 @@
 # vim: set tabstop=2 shiftwidth=2 expandtab:
 
 class GccMuslCross < Formula
-  desc "Linux cross compilers based on GCC 7.2 and musl libc"
+  BINUTILS_VER = "2.32".freeze
+  GCC_VER      = "8.3.0".freeze
+  MUSL_VER     = "1.1.22".freeze
+
+  desc "Linux cross compilers based on GCC 8.3 and musl libc"
   homepage "https://github.com/richfelker/musl-cross-make"
-  url "https://github.com/richfelker/musl-cross-make/archive/v0.9.7.tar.gz"
-  version "7.2.0"
-  sha256 "876173e2411b5f50516723c63075655a9aac55ee3804f91adfb61f0a85af8f38"
-  # head "https://github.com/richfelker/musl-cross-make.git"
+  url "https://github.com/richfelker/musl-cross-make/archive/v0.9.8.tar.gz"
+  version GCC_VER
+  sha256 "886ac2169c569455862d19789a794a51d0fbb37209e6fae1bda7d6554a689aac"
+  head "https://github.com/richfelker/musl-cross-make.git"
 
   OPTION_TO_TARGET_MAP = {
     "i686"       => "i686-linux-musl",
@@ -19,15 +23,15 @@ class GccMuslCross < Formula
     "mips64"     => "mips64-linux-musl",
     "powerpc"    => "powerpc-linux-musl",
     "powerpc64"  => "powerpc64-linux-musl",
-    # FIXME: Does not compile musl libc.
+    "s390x"      => "s390x-linux-musl",
+    # FIXME: test application crashed
     # "sh4"        => "sh4-linux-musl",
-    # "s390x"      => "s390x-linux-musl",
-    # FIXME: cannot execute binary file: Exec format error
+    # FIXME: cannot execute binary file: exec format error
     # "microblaze" => "microblaze-linux-musl",
   }.freeze
 
   OPTION_TO_TARGET_MAP.each do |option, target|
-    if %w[armhf x86_64].include? option
+    if %w[armhf aarch64 x86_64].include? option
       option "without-#{option}", "Do not build cross-compilers for #{target}"
     else
       option "with-#{option}", "Build cross-compilers for #{target}"
@@ -36,43 +40,36 @@ class GccMuslCross < Formula
 
   option "with-all-targets", "Build cross-compilers for all targets"
 
-  depends_on "gnu-sed" => :build
-  depends_on "make" => :build
-  depends_on "libmpc" => :build
   depends_on "gmp" => :build
-  depends_on "mpfr" => :build
+  depends_on "gnu-sed" => :build
   depends_on "isl" => :build
+  depends_on "libmpc" => :build
+  depends_on "make" => :build
+  depends_on "mpfr" => :build
 
   resource "linux-4.4.10.tar.xz" do
     url "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.4.10.tar.xz"
     sha256 "4ac22e4a619417213cfdab24714413bb9118fbaebe6012c6c89c279cdadef2ce"
   end
 
-  resource "binutils-2.27.tar.bz2" do
-    url "https://ftp.gnu.org/gnu/binutils/binutils-2.27.tar.bz2"
-    sha256 "369737ce51587f92466041a97ab7d2358c6d9e1b6490b3940eb09fb0a9a6ac88"
+  resource "binutils-#{BINUTILS_VER}.tar.bz2" do
+    url "https://ftp.gnu.org/gnu/binutils/binutils-#{BINUTILS_VER}.tar.bz2"
+    sha256 "de38b15c902eb2725eac6af21183a5f34ea4634cb0bcef19612b50e5ed31072d"
   end
 
-  resource "gcc-7.2.0.tar.xz" do
-    url "https://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz"
-    sha256 "1cf7adf8ff4b5aa49041c8734bbcf1ad18cc4c94d0029aae0f4e48841088479a"
+  resource "gcc-#{GCC_VER}.tar.xz" do
+    url "https://ftp.gnu.org/gnu/gcc/gcc-#{GCC_VER}/gcc-#{GCC_VER}.tar.xz"
+    sha256 "64baadfe6cc0f4947a84cb12d7f0dfaf45bb58b7e92461639596c21e02d97d2c"
   end
 
-  resource "musl-1.1.19.tar.gz" do
-    url "https://www.musl-libc.org/releases/musl-1.1.19.tar.gz"
-    sha256 "db59a8578226b98373f5b27e61f0dd29ad2456f4aa9cec587ba8c24508e4c1d9"
+  resource "musl-#{MUSL_VER}.tar.gz" do
+    url "https://www.musl-libc.org/releases/musl-#{MUSL_VER}.tar.gz"
+    sha256 "8b0941a48d2f980fd7036cfbd24aa1d414f03d9a0652ecbd5ec5c7ff1bee29e3"
   end
 
   resource "config.sub" do
     url "https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=3d5db9ebe860"
     sha256 "75d5d255a2a273b6e651f82eecfabf6cbcd8eaeae70e86b417384c8f4a58d8d3"
-  end
-
-  # Fix parallel build on APFS filesystems (remove for GCC 7.4.0 and later)
-  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81797
-  resource "apfs.patch" do
-    url "https://raw.githubusercontent.com/Homebrew/formula-patches/df0465c02a/gcc/apfs.patch"
-    sha256 "f7772a6ba73f44a6b378e4fe3548e0284f48ae2d02c701df1be93780c1607074"
   end
 
   def version_suffix
@@ -88,9 +85,6 @@ class GccMuslCross < Formula
     resources.each do |resource|
       cp resource.fetch, srcdir/resource.name
     end
-
-    # Fix parallel build on APFS filesystems (remove for GCC 7.4.0 and later)
-    cp resource("apfs.patch").fetch, buildpath/"patches"/"gcc-#{version}"/"0099-apfs.diff"
 
     # also change --libdir=#{lib}/gcc/#{version_suffix} to avoid conflicts with Homebrew gcc
     inreplace buildpath/"litecross"/"Makefile", "--libdir=/lib", "--libdir=/lib/gcc/#{version_suffix}-musl-cross"
@@ -108,8 +102,9 @@ class GccMuslCross < Formula
         OUTPUT  = #{prefix}
 
         # Versions:
-        GCC_VER  = #{version}
-        MUSL_VER = 1.1.19
+        BINUTILS_VER = #{BINUTILS_VER}
+        GCC_VER  = #{GCC_VER}
+        MUSL_VER = #{MUSL_VER}
 
         # Setup to use libs from Homebrew:
         GMP_VER  =
@@ -163,15 +158,16 @@ class GccMuslCross < Formula
       system Formula["make"].opt_bin/"gmake", "TARGET=#{target}", "install"
 
       # delete -cc link (created by musl-cross-make) and -gcc-7.2.0 (GCC default)
-      "cc gcc-#{version}".split.each do |suffix|
+      "cc gcc-#{GCC_VER}".split.each do |suffix|
         prog = bin/"#{target}-#{suffix}"
         prog.unlink if prog.file? || prog.symlink?
       end
     end
 
-    # handle conflicts between GCC formulae and avoid interfering with system compilers
-    man7.rmtree if man7.exist?
-    info.rmtree if info.exist?
+    # handle conflicts between GCC formulae and avoid interference with system compilers
+    [man7, info, share/"gcc-#{GCC_VER}"/"python"].each do |dir|
+      dir.rmtree if dir.exist?
+    end
   end
 
   def caveats

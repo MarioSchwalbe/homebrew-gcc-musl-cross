@@ -5,10 +5,11 @@
 .DELETE_ON_ERROR:
 SHELL   := /bin/bash
 
-# BIN_DIR := /usr/local/opt/gcc-musl-cross/bin
-BIN_DIR := /usr/local/Cellar/gcc-musl-cross/7.2.0/bin
+BIN_DIR := /usr/local/opt/gcc-musl-cross/bin
+# BIN_DIR := /usr/local/Cellar/gcc-musl-cross/8.3.0/bin
 
-TARGETS := $(sort $(patsubst %-gcc-7, %, $(notdir $(wildcard $(BIN_DIR)/*-gcc-7))))
+SUFFIX  := gcc-8
+TARGETS := $(sort $(patsubst %-ld, %, $(notdir $(wildcard $(BIN_DIR)/*-ld))))
 TESTS   := $(addprefix test-, $(TARGETS))
 
 CFLAGS  := -Os -Wall -Wextra
@@ -16,9 +17,9 @@ LDFLAGS := -static
 
 .DEFAULT_GOAL := default
 
-$(TESTS):  CC = $(BIN_DIR)/$(patsubst test-%,%-gcc-7,$@)
-$(TESTS):  test.c
-	$(LINK.c) $^ $(LDLIBS) -o $@
+$(TESTS):  CC = $(BIN_DIR)/$(patsubst test-%,%-$(SUFFIX),$@)
+$(TESTS):  test.c Makefile
+	$(LINK.c) $< $(LDLIBS) -o $@
 
 TEST_HOST := mario@sylvester
 
