@@ -183,8 +183,7 @@ class GccMuslCross < Formula
   test do
     (testpath/"hello.c").write <<-EOS
       #include <stdio.h>
-      int main(void)
-      {
+      int main(void) {
           puts("Hello World!");
           return 0;
       }
@@ -192,8 +191,7 @@ class GccMuslCross < Formula
 
     (testpath/"hello.cpp").write <<-EOS
       #include <iostream>
-      int main(void)
-      {
+      int main(void) {
           std::cout << "Hello World!" << std::endl;
           return 0;
       }
