@@ -1,14 +1,14 @@
-# https://resin.io/blog/building-arm-containers-on-any-x86-machine-even-dockerhub/
-# https://docs.docker.com/engine/reference/builder/
+# DOCS: https://resin.io/blog/building-arm-containers-on-any-x86-machine-even-dockerhub/
+# DOCS: https://docs.docker.com/engine/reference/builder/
 
 FROM alpine:latest
 WORKDIR /
 
 # copy test app
-ARG APP
-ADD ${APP} .
+ARG TEST
+ADD ${TEST} .
 
 # CMD does not expand ARG
 USER nobody:nobody
-ENV  APP=${APP}
-CMD  exec ./${APP}
+ENV  TEST=${TEST}
+CMD  exec ./${TEST}

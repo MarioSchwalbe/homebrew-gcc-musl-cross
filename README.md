@@ -14,7 +14,7 @@ installed as separate packages (e.g., Debian/Ubuntu).
 
 Binaries statically linked with `musl` libc (linked with `-static`) have no external dependencies,
 even for features like DNS lookups or character set conversions that are implemented with dynamic
-loading on glibc. The application can be deployed as a single binary file and run on any machine
+loading on glibc. The application can be deployed as a single binary file and run on any device
 with the appropriate ISA and Linux kernel or Linux syscall ABI emulation layer including bare docker
 containers.
 
@@ -37,7 +37,7 @@ Usage
     $ brew install gcc-8-musl-cross
     ```
 
-2. For dynamically linked applications install the Debian/Ubuntu packages on the target machine:
+2. For dynamically linked applications install the Debian/Ubuntu packages on the target device:
     ```sh
     $ sudo apt install musl:i386=1.1.19-1 musl:amd64=1.1.19-1
     ```
@@ -61,5 +61,5 @@ Supported Targets
 1. `powerpc-linux-musl`
 1. `powerpc64-linux-musl`
 
-Other targets or variants can be added easily by extending the hash `OPTION_TO_TARGET_MAP` in the
+Other targets or variants can be added easily by extending the hash `OPTION_TARGET_MAP` in the
 formula as long as `musl-cross-make` and `musl` libc also support them.
