@@ -21,7 +21,7 @@ containers.
 **Tool Versions:**
 - [GCC](https://gcc.gnu.org/) 8.3.0
 - [binutils](https://www.gnu.org/software/binutils/) 2.32
-- [musl libc](https://www.musl-libc.org/) 1.1.22
+- [musl libc](https://www.musl-libc.org/) 1.1.24
 
 **Based upon:**
 - [musl-cross-make](https://github.com/richfelker/musl-cross-make) by Rich Felker
@@ -33,12 +33,8 @@ Usage
 
 1. Install with Homebrew:
     ```sh
-    $ brew install MarioSchwalbe/gcc-musl-cross/gcc-musl-cross
-    ```
-    or
-    ```sh
-    $ brew tap MarioSchwalbe/gcc-musl-cross https://github.com/MarioSchwalbe/gcc-musl-cross
-    $ brew install gcc-musl-cross
+    $ brew tap MarioSchwalbe/gcc-musl-cross
+    $ brew install gcc-8-musl-cross
     ```
 
 2. For dynamically linked applications install the Debian/Ubuntu packages on the target machine:

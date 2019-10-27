@@ -1,19 +1,19 @@
 # vim: set tabstop=2 shiftwidth=2 expandtab:
 
-class GccMuslCross < Formula
+class Gcc8MuslCross < Formula
   BINUTILS_VER = "2.32".freeze
   GCC_VER      = "8.3.0".freeze
-  MUSL_VER     = "1.1.22".freeze
+  MUSL_VER     = "1.1.24".freeze
 
-  desc "Linux cross compilers based on GCC 8.3 and musl libc"
+  desc "Linux cross compilers based on GCC #{GCC_VER} and musl libc #{MUSL_VER}"
   homepage "https://github.com/richfelker/musl-cross-make"
   url "https://github.com/richfelker/musl-cross-make/archive/v0.9.8.tar.gz"
   version GCC_VER
   sha256 "886ac2169c569455862d19789a794a51d0fbb37209e6fae1bda7d6554a689aac"
   head "https://github.com/richfelker/musl-cross-make.git"
 
-  OPTION_TO_TARGET_MAP = {
-    "i686"       => "i686-linux-musl",
+  OPTION_TARGET_MAP = {
+    "x86"        => "i686-linux-musl",
     "x86_64"     => "x86_64-linux-musl",
     "x86_64x32"  => "x86_64-linux-muslx32",
     "arm"        => "arm-linux-musleabi",
@@ -30,7 +30,7 @@ class GccMuslCross < Formula
     # "microblaze" => "microblaze-linux-musl",
   }.freeze
 
-  OPTION_TO_TARGET_MAP.each do |option, target|
+  OPTION_TARGET_MAP.each do |option, target|
     if %w[armhf aarch64 x86_64].include? option
       option "without-#{option}", "Do not build cross-compilers for #{target}"
     else
@@ -40,12 +40,21 @@ class GccMuslCross < Formula
 
   option "with-all-targets", "Build cross-compilers for all targets"
 
-  depends_on "gmp" => :build
+  depends_on "gmp"     => :build
   depends_on "gnu-sed" => :build
-  depends_on "isl" => :build
-  depends_on "libmpc" => :build
-  depends_on "make" => :build
-  depends_on "mpfr" => :build
+  depends_on "isl"     => :build
+  depends_on "libmpc"  => :build
+  depends_on "make"    => :build
+  depends_on "mpfr"    => :build
+
+  MUSL_SHA256_MAP = {
+    "1.1.19" => "db59a8578226b98373f5b27e61f0dd29ad2456f4aa9cec587ba8c24508e4c1d9",
+    "1.1.20" => "44be8771d0e6c6b5f82dd15662eb2957c9a3173a19a8b49966ac0542bbd40d61",
+    "1.1.21" => "c742b66f6f49c9e5f52f64d8b79fecb5a0f6e0203fca176c70ca20f6be285f44",
+    "1.1.22" => "8b0941a48d2f980fd7036cfbd24aa1d414f03d9a0652ecbd5ec5c7ff1bee29e3",
+    "1.1.23" => "8a0feb41cef26c97dde382c014e68b9bb335c094bbc1356f6edaaf6b79bd14aa",
+    "1.1.24" => "1370c9a812b2cf2a7d92802510cca0058cc37e66a7bedd70051f0a34015022a3",
+  }.freeze
 
   resource "linux-4.4.10.tar.xz" do
     url "https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.4.10.tar.xz"
@@ -64,7 +73,7 @@ class GccMuslCross < Formula
 
   resource "musl-#{MUSL_VER}.tar.gz" do
     url "https://www.musl-libc.org/releases/musl-#{MUSL_VER}.tar.gz"
-    sha256 "8b0941a48d2f980fd7036cfbd24aa1d414f03d9a0652ecbd5ec5c7ff1bee29e3"
+    sha256 MUSL_SHA256_MAP[MUSL_VER]
   end
 
   resource "config.sub" do
@@ -92,8 +101,8 @@ class GccMuslCross < Formula
     # make sure we use GNU sed for building
     ENV.prepend_path "PATH", "#{Formula["gnu-sed"].opt_libexec}/gnubin"
 
-    # write config, build, and install all targets
-    OPTION_TO_TARGET_MAP.each do |option, target|
+    # write config, build, and install for all targets
+    OPTION_TARGET_MAP.each do |option, target|
       next unless build.with?(option) || build.with?("all-targets")
 
       # DOCS: https://gcc.gnu.org/install/configure.html
@@ -111,26 +120,27 @@ class GccMuslCross < Formula
         MPC_VER  =
         MPFR_VER =
         ISL_VER  =
-        GCC_CONFIG += --with-gmp=#{Formula["gmp"].opt_prefix}
-        GCC_CONFIG += --with-mpc=#{Formula["libmpc"].opt_prefix}
-        GCC_CONFIG += --with-mpfr=#{Formula["mpfr"].opt_prefix}
-        GCC_CONFIG += --with-isl=#{Formula["isl"].opt_prefix}
-        GCC_CONFIG += --with-system-zlib
+        COMMON_CONFIG += --with-gmp=#{Formula["gmp"].opt_prefix}
+        COMMON_CONFIG += --with-mpc=#{Formula["libmpc"].opt_prefix}
+        COMMON_CONFIG += --with-mpfr=#{Formula["mpfr"].opt_prefix}
+        COMMON_CONFIG += --with-isl=#{Formula["isl"].opt_prefix}
+        COMMON_CONFIG += --with-system-zlib
 
         # Release build options:
-        GCC_CONFIG += --build=x86_64-apple-darwin#{os_version}
-        GCC_CONFIG += --program-prefix=#{target}-
-        GCC_CONFIG += --program-suffix=-#{version_suffix}
-        GCC_CONFIG += --enable-default-pie
-        GCC_CONFIG += --enable-checking=release
-        GCC_CONFIG += --with-pkgversion="Homebrew GCC #{pkg_version} musl cross"
-        GCC_CONFIG += --with-bugurl="https://github.com/MarioSchwalbe/gcc-musl-cross/issues"
+        COMMON_CONFIG += --build=x86_64-apple-darwin#{os_version}
+        COMMON_CONFIG += --program-prefix=#{target}-
+        COMMON_CONFIG += --program-suffix=-#{version_suffix}
+        # FIXME: Crashes on outout via std::cerr on arm-linux-musleabihf:
+        # COMMON_CONFIG += --enable-default-pie
+        COMMON_CONFIG += --enable-checking=release
+        COMMON_CONFIG += --with-pkgversion="Homebrew GCC #{pkg_version} musl cross"
+        COMMON_CONFIG += --with-bugurl="https://github.com/MarioSchwalbe/gcc-musl-cross/issues"
 
         # Recommended options for faster/simpler build:
-        GCC_CONFIG += --enable-languages=c,c++
-        GCC_CONFIG += --disable-nls
-        GCC_CONFIG += --disable-libquadmath --disable-libquadmath-support
-        # GCC_CONFIG += --disable-multilib
+        COMMON_CONFIG += --enable-languages=c,c++
+        COMMON_CONFIG += --disable-nls
+        COMMON_CONFIG += --disable-libquadmath --disable-libquadmath-support
+        COMMON_CONFIG += --disable-multilib
 
         # Recommended options for smaller build for deploying binaries:
         COMMON_CONFIG += CFLAGS="-g0 -Os" CXXFLAGS="-g0 -Os" LDFLAGS="-s"
@@ -147,8 +157,8 @@ class GccMuslCross < Formula
       # append required options for ppc targets
       if target.start_with? "powerpc"
         config += <<-EOS
-          GCC_CONFIG += --with-long-double-64
-          GCC_CONFIG += --enable-secureplt
+          COMMON_CONFIG += --with-long-double-64
+          COMMON_CONFIG += --enable-secureplt
         EOS
       end
 
@@ -175,8 +185,7 @@ class GccMuslCross < Formula
       When using the toolchain, the generated binaries will only run on a system with
       musl libc installed. Either musl-based distributions like Alpine Linux or
       distributions having musl libc installed as separate packages (Debian/Ubuntu).
-      However, if building static binaries they should run on any system including
-      bare docker containers.
+      However, if building static binaries they should run on any system.
     EOS
   end
 
@@ -190,6 +199,8 @@ class GccMuslCross < Formula
     EOS
 
     (testpath/"hello.cpp").write <<-EOS
+      // FIXME: error: 'pthread_mutex_timedlock' was not declared in this scope
+      #define _GLIBCXX_GCC_GTHR_POSIX_H 1
       #include <iostream>
       int main(void) {
           std::cout << "Hello World!" << std::endl;
@@ -197,18 +208,30 @@ class GccMuslCross < Formula
       }
     EOS
 
-    OPTION_TO_TARGET_MAP.each do |option, target|
+    TEST_OPTION_MAP = {
+      "readelf" => ["-a"],
+      "objdump" => ["-ldSC"],
+      "strings" => [],
+      "size"    => [],
+      "nm"      => [],
+      "strip"   => [],
+    }.freeze
+
+    OPTION_TARGET_MAP.each do |option, target|
       next unless build.with?(option) || build.with?("all-targets")
 
-      system bin/"#{target}-gcc-#{version_suffix}", "-O2", "hello.c", "-o", "hello-#{target}"
-      system bin/"#{target}-readelf-#{version_suffix}", "-a", "hello-#{target}"
-      system bin/"#{target}-objdump-#{version_suffix}", "-ldSC", "hello-#{target}"
-      system bin/"#{target}-strings-#{version_suffix}", "hello-#{target}"
+      test_prog = "hello-#{target}"
+      system bin/"#{target}-gcc-#{version_suffix}", "-O2", "hello.c", "-o", test_prog
+      assert_predicate testpath/test_prog, :exist?
+      TEST_OPTION_MAP.each do |prog, options|
+        system bin/"#{target}-#{prog}-#{version_suffix}", *options, test_prog
+      end
 
-      system bin/"#{target}-g++-#{version_suffix}", "-O2", "hello.cpp", "-o", "hello-#{target}"
-      system bin/"#{target}-readelf-#{version_suffix}", "-a", "hello-#{target}"
-      system bin/"#{target}-objdump-#{version_suffix}", "-ldSC", "hello-#{target}"
-      system bin/"#{target}-strings-#{version_suffix}", "hello-#{target}"
+      system bin/"#{target}-g++-#{version_suffix}", "-O2", "hello.cpp", "-o", test_prog
+      assert_predicate testpath/test_prog, :exist?
+      TEST_OPTION_MAP.each do |prog, options|
+        system bin/"#{target}-#{prog}-#{version_suffix}", *options, test_prog
+      end
     end
   end
 end
