@@ -190,6 +190,26 @@ class Gcc9MuslCross < Formula
   end
 
   test do
+    TEST_OPTION_MAP = {
+      "readelf" => ["-a"],
+      "objdump" => ["-ldSC"],
+      "strings" => [],
+      "size"    => [],
+      "nm"      => [],
+      "strip"   => [],
+    }.freeze
+
+    UNSET_VARS = %w[
+      SDKROOT CMAKE_PREFIX_PATH CPATH
+      CC CFLAGS CPPFLAGS CXX CXXFLAGS
+      OBJC OBJCFLAGS OBJCXX OBJCXXFLAGS
+      LDFLAGS
+    ].freeze
+
+    UNSET_VARS.each do |var|
+      ENV.delete(var) if ENV.has_key? var
+    end
+
     (testpath/"hello.c").write <<-EOS
       #include <stdio.h>
       int main(void) {
@@ -207,15 +227,6 @@ class Gcc9MuslCross < Formula
           return 0;
       }
     EOS
-
-    TEST_OPTION_MAP = {
-      "readelf" => ["-a"],
-      "objdump" => ["-ldSC"],
-      "strings" => [],
-      "size"    => [],
-      "nm"      => [],
-      "strip"   => [],
-    }.freeze
 
     OPTION_TARGET_MAP.each do |option, target|
       next unless build.with?(option) || build.with?("all-targets")
