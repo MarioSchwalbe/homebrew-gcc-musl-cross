@@ -189,26 +189,17 @@ class Gcc8MuslCross < Formula
     EOS
   end
 
+  TEST_OPTION_MAP = {
+    "readelf" => ["-a"],
+    "objdump" => ["-ldSC"],
+    "strings" => [],
+    "size"    => [],
+    "nm"      => [],
+    "strip"   => [],
+  }.freeze
+
   test do
-    TEST_OPTION_MAP = {
-      "readelf" => ["-a"],
-      "objdump" => ["-ldSC"],
-      "strings" => [],
-      "size"    => [],
-      "nm"      => [],
-      "strip"   => [],
-    }.freeze
-
-    UNSET_VARS = %w[
-      SDKROOT CMAKE_PREFIX_PATH CPATH
-      CC CFLAGS CPPFLAGS CXX CXXFLAGS
-      OBJC OBJCFLAGS OBJCXX OBJCXXFLAGS
-      LDFLAGS
-    ].freeze
-
-    UNSET_VARS.each do |var|
-      ENV.delete(var) if ENV.has_key? var
-    end
+    ENV.clear
 
     (testpath/"hello.c").write <<-EOS
       #include <stdio.h>
