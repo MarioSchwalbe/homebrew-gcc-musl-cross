@@ -3,9 +3,8 @@
 # vim: set tabstop=8 shiftwidth=8 noexpandtab:
 
 .DELETE_ON_ERROR:
-SHELL    := /bin/bash
 
-V        ?= 8
+V        ?= 9
 SUFFIX   := g++-$(V)
 BIN_DIR  := $(wildcard /usr/local/Cellar/gcc-$(V)-musl-cross/*/bin)
 TARGETS  := $(sort $(patsubst %-$(SUFFIX), %, $(notdir $(wildcard $(BIN_DIR)/*-$(SUFFIX)))))
